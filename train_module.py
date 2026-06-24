@@ -430,7 +430,7 @@ class CombinedModel(nn.Module):
 
         clf_criterion = nn.CrossEntropyLoss()
         critic = Discriminator().to(device)
-        critic.layer[4] = nn.Sequential(nn.Linear(256, 1), nn.Sigmoid()).to(device)
+        critic.layer[4] = nn.Linear(256, 1).to(device)
 
         critic_optim = torch.optim.Adam(critic.parameters(), 
                                       lr=self.config.lr_wdgrl_critic, 
