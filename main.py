@@ -13,7 +13,7 @@ def parse_arguments():
     
     # Model architecture
     parser.add_argument('--encoder', type=str, default='ResNet', help='encoder model: ResNet/EffNet/ENN')
-    parser.add_argument('--DA_methods', type=str, default="all", help="DA methods, e.g. sda/adda/wdgrl/wgan/wgangp")
+    parser.add_argument('--DA_methods', type=str, default="all", help="DA methods, e.g. sda/adda/wdgrl/all")
 
     # Directory and file paths
     parser.add_argument('--out_dir', type=str, default="", help="output directory for Weights and Results; error if doesn't exist")
@@ -21,8 +21,8 @@ def parse_arguments():
     parser.add_argument('--savename', type=str, default="", help="suffix of Results savename (like _aug or _hsmokes etc)")
     
     # Dataset parameters
-    parser.add_argument('--src_dataset', type=str, default='custom', help="simulations for source dataset")
-    parser.add_argument('--subsample', type=str, default='', help='subsample of lenses: S1/S2/S3')
+    parser.add_argument('--src_dataset', type=str, default='custom', help="simulations for source dataset") # this is not used anymore, but was required when we tested on Metcalf+2019 dataset
+    parser.add_argument('--subsample', type=str, default='', help='subsample of lenses: S1/S2/S3')  # this is not used anymore and corresponds to the subsamples in the Metcalf+2019 dataset
     parser.add_argument('--simulated_test', action='store_true', help="Use simulated data for testing")  # this need to be added to read_module
     
     # Preprocessing
