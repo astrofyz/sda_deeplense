@@ -179,6 +179,10 @@ def main():
     # Initialize DataReader
     data_reader = DataReader(args.data_dir, preprocess)
     
+    # Only the 'test' split is needed when neither training the source model
+    # nor running adaptation (i.e. a pure evaluation run on existing weights)
+    only_test = not (args.train_source or args.adapt)
+
     # Configure data loading
     data_config = {
         'source_size': (args.src_size, args.src_neg_size or args.src_size),
@@ -188,6 +192,7 @@ def main():
         'random_seed': args.random_seed,
         'transforms': image_transforms,
         'sda_benchmark': args.sda_benchmark,
+        'only_test': only_test,
         'spirals_config': {
             'use_spirals': args.include_spirals,
             'train_spirals_size': args.total_spirals,
@@ -199,15 +204,15 @@ def main():
     # Get all dataloaders
     # loaders = data_reader.get_all_loaders(data_config)
     loaders = data_reader.get_default_loaders(data_config)
-    
+
     # Print filenames for target_train and test loaders
     # print_dataset_filenames(loaders['target_train'], "target_train", args.out_dir)
     # print_dataset_filenames(loaders['test'], "test", args.out_dir)
-    
-    source_train_loader = loaders['source_train']
-    source_val_loader = loaders['source_val']
-    target_train_loader = loaders['target_train']
-    target_val_loader = loaders['target_val']
+
+    source_train_loader = loaders.get('source_train')
+    source_val_loader = loaders.get('source_val')
+    target_train_loader = loaders.get('target_train')
+    target_val_loader = loaders.get('target_val')
     test_loader = loaders['test']
 
     config = TrainingConfig(

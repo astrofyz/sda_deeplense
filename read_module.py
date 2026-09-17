@@ -280,56 +280,77 @@ class DataReader:
 
     def get_default_loaders(self, config):
         """
-        Returns dataloaders by loading pre-split datasets from specified paths
+        Returns dataloaders by loading pre-split datasets from specified paths.
+
+        If config['only_test'] is True, skips loading the source/target
+        train+val splits and the simulated test split entirely, and returns
+        just the 'test' loader (those other splits aren't needed to run
+        evaluation on pre-trained weights).
         """
-        # Load training files
-        source_pos_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_source_lenses'))
-        source_neg_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_source_nonlenses'))
-        target_pos_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_target_lenses'))
-        target_neg_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_target_nonlenses'))
+        only_test = config.get('only_test', False)
 
-        # Load validation files
-        source_pos_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_source_lenses_fair'))
-        source_neg_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_source_nonlenses_fair'))
-        target_pos_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_target_lenses'))
-        target_neg_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_target_nonlenses'))
+        loaders = {}
 
-        # Load test files
+        if not only_test:
+            # Load training files
+            source_pos_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_source_lenses'))
+            source_neg_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_source_nonlenses'))
+            target_pos_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_target_lenses'))
+            target_neg_train = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/train_target_nonlenses'))
+
+            # Load validation files
+            source_pos_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_source_lenses_fair'))
+            source_neg_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_source_nonlenses_fair'))
+            target_pos_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_target_lenses'))
+            target_neg_val = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/val_target_nonlenses'))
+
+            test_sim_pos = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_sim_lenses'))
+            test_sim_neg = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_sim_nonlenses'))
+
+            logging.info("\nDataset sizes:")
+            logging.info(f"Source train - Pos: {len(source_pos_train)}, Neg: {len(source_neg_train)}")
+            logging.info(f"Source val - Pos: {len(source_pos_val)}, Neg: {len(source_neg_val)}")
+            logging.info(f"Target train - Pos: {len(target_pos_train)}, Neg: {len(target_neg_train)}")
+            logging.info(f"Target val - Pos: {len(target_pos_val)}, Neg: {len(target_neg_val)}")
+            logging.info(f"Test sim - Pos: {len(test_sim_pos)}, Neg: {len(test_sim_neg)}")
+
+            source_train = ConcatDataset([
+                DirData(source_pos_train, np.ones(len(source_pos_train)), config['transforms']['train'], self.preprocess_func),
+                DirData(source_neg_train, np.zeros(len(source_neg_train)), config['transforms']['train'], self.preprocess_func)
+            ])
+
+            source_val = ConcatDataset([
+                DirData(source_pos_val, np.ones(len(source_pos_val)), config['transforms']['val'], self.preprocess_func),
+                DirData(source_neg_val, np.zeros(len(source_neg_val)), config['transforms']['val'], self.preprocess_func)
+            ])
+
+            target_train = ConcatDataset([
+                DirData(target_pos_train, np.ones(len(target_pos_train)), config['transforms']['train'], self.preprocess_func),
+                DirData(target_neg_train, np.zeros(len(target_neg_train)), config['transforms']['train'], self.preprocess_func)
+            ])
+
+            target_val = ConcatDataset([
+                DirData(target_pos_val, np.ones(len(target_pos_val)), config['transforms']['val'], self.preprocess_func),
+                DirData(target_neg_val, np.zeros(len(target_neg_val)), config['transforms']['val'], self.preprocess_func)
+            ])
+
+            test_sim_dataset = ConcatDataset([
+                DirData(test_sim_pos, np.ones(len(test_sim_pos)), config['transforms']['val'], self.preprocess_func),
+                DirData(test_sim_neg, np.zeros(len(test_sim_neg)), config['transforms']['val'], self.preprocess_func)
+            ])
+
+            loaders['source_train'] = DataLoader(source_train, batch_size=config['batch_size'], shuffle=True, drop_last=True)
+            loaders['source_val'] = DataLoader(source_val, batch_size=config['batch_size'], shuffle=True, drop_last=True)
+            loaders['target_train'] = DataLoader(target_train, batch_size=config['batch_size'], shuffle=True, drop_last=True)
+            loaders['target_val'] = DataLoader(target_val, batch_size=config['batch_size'], shuffle=True, drop_last=True)
+            loaders['test_sim'] = DataLoader(test_sim_dataset, batch_size=config['batch_size'], shuffle=True, drop_last=True)
+
+        # Load test files (always needed)
         test_pos = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_real_lenses'))
         test_neg = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_real_nonlenses'))
 
-        test_sim_pos = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_sim_lenses'))
-        test_sim_neg = self._load_files(os.path.join(self.data_dir, 'holismokes/reproducing_default/test_sim_nonlenses'))
-
-        # Log dataset sizes
-        logging.info("\nDataset sizes:")
-        logging.info(f"Source train - Pos: {len(source_pos_train)}, Neg: {len(source_neg_train)}")
-        logging.info(f"Source val - Pos: {len(source_pos_val)}, Neg: {len(source_neg_val)}")
-        logging.info(f"Target train - Pos: {len(target_pos_train)}, Neg: {len(target_neg_train)}")
-        logging.info(f"Target val - Pos: {len(target_pos_val)}, Neg: {len(target_neg_val)}")
         logging.info(f"Test - Pos: {len(test_pos)}, Neg: {len(test_neg)}")
-        logging.info(f"Test sim - Pos: {len(test_sim_pos)}, Neg: {len(test_sim_neg)}")
-        # Create datasets
-        source_train = ConcatDataset([
-            DirData(source_pos_train, np.ones(len(source_pos_train)), config['transforms']['train'], self.preprocess_func),
-            DirData(source_neg_train, np.zeros(len(source_neg_train)), config['transforms']['train'], self.preprocess_func)
-        ])
-        
-        source_val = ConcatDataset([
-            DirData(source_pos_val, np.ones(len(source_pos_val)), config['transforms']['val'], self.preprocess_func),
-            DirData(source_neg_val, np.zeros(len(source_neg_val)), config['transforms']['val'], self.preprocess_func)
-        ])
-        
-        target_train = ConcatDataset([
-            DirData(target_pos_train, np.ones(len(target_pos_train)), config['transforms']['train'], self.preprocess_func),
-            DirData(target_neg_train, np.zeros(len(target_neg_train)), config['transforms']['train'], self.preprocess_func)
-        ])
-        
-        target_val = ConcatDataset([
-            DirData(target_pos_val, np.ones(len(target_pos_val)), config['transforms']['val'], self.preprocess_func),
-            DirData(target_neg_val, np.zeros(len(target_neg_val)), config['transforms']['val'], self.preprocess_func)
-        ])
-        
+
         test_dataset = ConcatDataset([
             DirData(test_pos, np.ones(len(test_pos)), config['transforms']['val'], self.preprocess_func),
             DirData(test_neg, np.zeros(len(test_neg)), config['transforms']['val'], self.preprocess_func)
@@ -337,22 +358,7 @@ class DataReader:
 
         print("len test dataset", len(test_pos) + len(test_neg))
 
-        test_sim_dataset = ConcatDataset([
-            DirData(test_sim_pos, np.ones(len(test_sim_pos)), config['transforms']['val'], self.preprocess_func),
-            DirData(test_sim_neg, np.zeros(len(test_sim_neg)), config['transforms']['val'], self.preprocess_func)
-        ])
-
-        # print("CONFIG TRANSFORMS", config['transforms'], self.preprocess_func)
-
-        # Create dataloaders
-        loaders = {
-            'source_train': DataLoader(source_train, batch_size=config['batch_size'], shuffle=True, drop_last=True),
-            'source_val': DataLoader(source_val, batch_size=config['batch_size'], shuffle=True, drop_last=True),
-            'target_train': DataLoader(target_train, batch_size=config['batch_size'], shuffle=True, drop_last=True),
-            'target_val': DataLoader(target_val, batch_size=config['batch_size'], shuffle=True, drop_last=True),
-            'test': DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=True, drop_last=True),
-            'test_sim': DataLoader(test_sim_dataset, batch_size=config['batch_size'], shuffle=True, drop_last=True)
-        }
+        loaders['test'] = DataLoader(test_dataset, batch_size=config['batch_size'], shuffle=True, drop_last=True)
 
         return loaders
 

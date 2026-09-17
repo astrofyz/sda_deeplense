@@ -36,6 +36,14 @@ python main.py --encoder='ENN' --DA_methods="adda/sda/wdgrl" --out_dir="Output" 
 
 For the experiment including spiral contaminants add ```--include_spirals``` keyword
 
+### Evaluation Only (using existing weights)
+
+To evaluate pre-trained weights without training or adaptation:
+
+```
+python main.py --encoder='ENN' --DA_methods="sda" --out_dir="Output" --data_dir='../Data' --evaluate
+```
+
 ## Key Parameters
 
 ### Model Configuration
@@ -65,6 +73,40 @@ For the experiment including spiral contaminants add ```--include_spirals``` key
 ### Evaluation
 - `--desired_fpr`: Desired false positive rate for evaluation
 - `--save_losses`: Save training losses for analysis
+
+## Expected Input Structure
+
+`--data_dir`:
+```
+{data_dir}/
+└── holismokes/
+    └── reproducing_default/
+        ├── train_source_lenses/
+        ├── train_source_nonlenses/
+        ├── train_target_lenses/
+        ├── train_target_nonlenses/
+        ├── val_source_lenses_fair/
+        ├── val_source_nonlenses_fair/
+        ├── val_target_lenses/
+        ├── val_target_nonlenses/
+        ├── test_real_lenses/       (required for --evaluate)
+        ├── test_real_nonlenses/    (required for --evaluate)
+        ├── test_sim_lenses/
+        └── test_sim_nonlenses/
+```
+
+`--out_dir` (pre-trained weights, for `--evaluate` without `--train_source`/`--adapt`):
+```
+{out_dir}/
+└── {encoder}/
+    └── weights/
+        ├── source/
+        │   ├── {encoder}_encoder_source_{iter}.pth
+        │   └── {encoder}_classifier_source_{iter}.pth
+        └── {method}/                      (adda/wdgrl/sda)
+            ├── {encoder}_encoder_{method}[_epoch_N]_{iter}.pth
+            └── {encoder}_classifier_{method}[_epoch_N]_{iter}.pth
+```
 
 ## Output Structure
 

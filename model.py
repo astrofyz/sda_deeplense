@@ -81,8 +81,8 @@ class Equivariant_Network(torch.nn.Module):
         self.fully_net = torch.nn.Sequential(
             torch.nn.Linear(5184, 256),
             torch.nn.BatchNorm1d(256),
-            torch.nn.ELU(inplace=True),
-            torch.nn.Linear(256, 256),
+            # torch.nn.ELU(inplace=True),
+            # torch.nn.Linear(256, 256),
         )
 
     def forward(self, input: torch.Tensor):
@@ -145,9 +145,9 @@ class Classifier(torch.nn.Module):
         self.fc2 = torch.nn.Linear(256, 2)
 
     def forward(self, feat):
-        # out = F.dropout(F.relu(feat), training=self.training)
-        # out = self.fc2(out)
-        out = self.fc2(feat)
+        out = F.dropout(F.relu(feat), training=self.training)
+        out = self.fc2(out)
+        # out = self.fc2(feat)
         return out
     
     

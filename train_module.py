@@ -133,8 +133,8 @@ class CombinedModel(nn.Module):
     def train_backbone(self, train_loader, val_loader, continue_training=False):
         if continue_training:
             self.logger.info("loading weights")
-            self.source_encoder.load_state_dict(torch.load(os.path.join(self.config.output_dir, f'{self.config.encoder_name}', f'{self.config.encoder_name}_Encoder_Source_{self.config.iteration}.pth')))
-            self.source_classifier = torch.load(os.path.join(self.config.output_dir, f'{self.config.encoder_name}', f'{self.config.encoder_name}_Classifier_Source_{self.config.iteration}.pth'))
+            self.source_encoder.load_state_dict(torch.load(os.path.join(self.config.output_dir, f'{self.config.encoder_name}', f'{self.config.encoder_name}_Encoder_Source_{self.config.iteration}.pth'), map_location=self.device))
+            self.source_classifier = torch.load(os.path.join(self.config.output_dir, f'{self.config.encoder_name}', f'{self.config.encoder_name}_Classifier_Source_{self.config.iteration}.pth'), map_location=self.device)
 
         # Print model structure
 #        self.logger.info("\nSource Encoder Structure:")
@@ -782,12 +782,12 @@ class CombinedModel(nn.Module):
         
         if os.path.exists(source_encoder_path) and os.path.exists(source_classifier_path):
             try:
-                self.source_encoder.load_state_dict(torch.load(source_encoder_path))
-                self.source_classifier.load_state_dict(torch.load(source_classifier_path))
+                self.source_encoder.load_state_dict(torch.load(source_encoder_path, map_location=self.device))
+                self.source_classifier.load_state_dict(torch.load(source_classifier_path, map_location=self.device))
                 self.logger.info(f"Loaded source weights for iteration {self.config.iteration}")
             except TypeError:
-                self.source_classifier = torch.load(source_classifier_path)
-                self.source_encoder.load_state_dict(torch.load(source_encoder_path), strict=False)
+                self.source_classifier = torch.load(source_classifier_path, map_location=self.device)
+                self.source_encoder.load_state_dict(torch.load(source_encoder_path, map_location=self.device), strict=False)
                 self.logger.info(f"Loaded source weights for iteration {self.config.iteration}")
         else:
             raise FileNotFoundError(f"Source weights not found for iteration {self.config.iteration}")
@@ -822,13 +822,13 @@ class CombinedModel(nn.Module):
             
             if target_encoder_path and target_classifier_path:
                 try:
-                    self.target_encoder[method].load_state_dict(torch.load(target_encoder_path), strict=False)
-                    self.target_classifier[method].load_state_dict(torch.load(target_classifier_path))
+                    self.target_encoder[method].load_state_dict(torch.load(target_encoder_path, map_location=self.device), strict=False)
+                    self.target_classifier[method].load_state_dict(torch.load(target_classifier_path, map_location=self.device))
                     self.logger.info(f"Loaded {method} target weights: \nEncoder: {os.path.basename(target_encoder_path)}\nClassifier: {os.path.basename(target_classifier_path)}")
                     loaded_methods.append(method)
                 except TypeError:
-                    self.target_encoder[method].load_state_dict(torch.load(target_encoder_path), strict=False)
-                    self.target_classifier[method] =  torch.load(target_classifier_path)
+                    self.target_encoder[method].load_state_dict(torch.load(target_encoder_path, map_location=self.device), strict=False)
+                    self.target_classifier[method] =  torch.load(target_classifier_path, map_location=self.device)
                     loaded_methods.append(method)
                     self.logger.info(f"Loaded {method} target weights: \nEncoder: {os.path.basename(target_encoder_path)}\nClassifier: {os.path.basename(target_classifier_path)}")
             else:
